@@ -35,6 +35,7 @@ pipeline {
                 ]) {
                     sh '''
                         echo "===== AWS IDENTITY ====="
+
                         aws sts get-caller-identity
                     '''
                 }
@@ -63,46 +64,63 @@ pipeline {
                      credentialsId: 'aws-terraform-jenkins']
                 ]) {
                     sh '''
-                        echo "===== TERRAFORM DIRECTORY ====="
-                        ls -la .terraform || true
-
-                        echo ""
-                        echo "===== TERRAFORM BACKEND FILES ====="
-                        find .terraform -maxdepth 3 -type f -print 2>/dev/null || true
-
-                        echo ""
                         echo "===== TERRAFORM VERSION ====="
+
                         terraform version
 
                         echo ""
-                        echo "===== TERRAFORM PROVIDERS ====="
-                        terraform providers
+                        echo "===== TERRAFORM WORKSPACE ====="
+
+                        terraform workspace show
 
                         echo ""
-                        echo "===== DIRECT S3 STATE CHECK ====="
+                        echo "===== TERRAFORM WORKSPACES ====="
 
-                        aws s3 cp \
-                          s3://shamil-terraform-state-2026-148908330969/cloud-native-task-manager/terraform.tfstate \
-                          /tmp/jenkins-terraform.tfstate
+                        terraform workspace list
 
                         echo ""
-                        echo "===== RESOURCE IDS IN DIRECT S3 COPY ====="
+                        echo "===== TERRAFORM DIRECTORY ====="
 
-                        grep -E \
-                          'i-0b44a5d32e4241f7b|sg-0062934f4aad9e2e5|cloud-native-task-manager' \
-                          /tmp/jenkins-terraform.tfstate || true
+                        ls -la .terraform
 
                         echo ""
-                        echo "===== TERRAFORM STATE PULL ====="
+                        echo "===== TERRAFORM BACKEND FILES ====="
+
+                        find .terraform -maxdepth 3 -type f -print 2>/dev/null || true
+
+                        echo ""
+                        echo "===== TERRAFORM BACKEND CONFIGURATION ====="
+
+                        grep -R "shamil-terraform-state-2026-148908330969" \
+                            .terraform 2>/dev/null || true
+
+                        echo ""
+                        echo "===== TERRAFORM STATE PULL SIZE ====="
 
                         terraform state pull > /tmp/terraform-state-pull.json
 
-                        echo ""
-                        echo "===== RESOURCE IDS FROM TERRAFORM STATE PULL ====="
+                        wc -c /tmp/terraform-state-pull.json
 
-                        grep -E \
-                          'i-0b44a5d32e4241f7b|sg-0062934f4aad9e2e5|cloud-native-task-manager' \
-                          /tmp/terraform-state-pull.json || true
+                        echo ""
+                        echo "===== TERRAFORM STATE PULL RESOURCES ====="
+
+                        grep -E '"type":|"name":|"id":' \
+                            /tmp/terraform-state-pull.json | head -80
+
+                        echo ""
+                        echo "===== DIRECT S3 STATE SIZE ====="
+
+                        aws s3 cp \
+                            s3://shamil-terraform-state-2026-148908330969/cloud-native-task-manager/terraform.tfstate \
+                            /tmp/direct-s3-state.json
+
+                        wc -c /tmp/direct-s3-state.json
+
+                        echo ""
+                        echo "===== DIRECT S3 STATE RESOURCES ====="
+
+                        grep -E '"type":|"name":|"id":' \
+                            /tmp/direct-s3-state.json | head -80
                     '''
                 }
             }
@@ -123,8 +141,8 @@ pipeline {
                         echo "===== S3 OBJECT ====="
 
                         aws s3api head-object \
-                          --bucket shamil-terraform-state-2026-148908330969 \
-                          --key cloud-native-task-manager/terraform.tfstate
+                            --bucket shamil-terraform-state-2026-148908330969 \
+                            --key cloud-native-task-manager/terraform.tfstate
 
                         echo ""
                         echo "===== TERRAFORM STATE LIST ====="
