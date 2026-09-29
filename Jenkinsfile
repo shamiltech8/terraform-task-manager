@@ -44,13 +44,28 @@ pipeline {
             }
         }
 
-        stage('Terraform State Check') {
+        stage('Terraform State Diagnosis') {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
                      credentialsId: 'aws-terraform-jenkins']
                 ]) {
-                    sh 'terraform state list'
+                    sh '''
+                        echo "===== AWS IDENTITY ====="
+                        aws sts get-caller-identity
+
+                        echo "===== S3 OBJECT ====="
+                        aws s3api head-object \
+                          --bucket shamil-terraform-state-2026-148908330969 \
+                          --key cloud-native-task-manager/terraform.tfstate
+
+                        echo "===== TERRAFORM STATE LIST ====="
+                        terraform state list
+
+                        echo "===== TERRAFORM STATE PULL ====="
+                        terraform state pull | grep -E \
+                          'i-0b44a5d32e4241f7b|sg-0062934f4aad9e2e5|cloud-native-task-manager' || true
+                    '''
                 }
             }
         }
@@ -71,28 +86,12 @@ pipeline {
                 }
             }
         }
-
-        stage('Approval') {
-            steps {
-                input message: 'Terraform plan reviewed. Apply the saved plan?'
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-jenkins']
-                ]) {
-                    sh 'terraform apply tfplan'
-                }
-            }
-        }
     }
 
     post {
         always {
-            archiveArtifacts artifacts: 'tfplan', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'tfplan',
+                             allowEmptyArchive: true
         }
     }
 }
