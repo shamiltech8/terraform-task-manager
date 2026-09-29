@@ -148,7 +148,7 @@ pipeline {
         stage('Create Terraform Variables') {
             steps {
                 sh '''
-                    echo "===== CREATING TERRAFORM VARIABLES =====
+                    echo "===== CREATING TERRAFORM VARIABLES ====="
 
                     cat > terraform.tfvars <<'EOF'
 ami_id               = "ami-01a00762f46d584a1"
