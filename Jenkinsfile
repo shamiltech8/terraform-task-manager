@@ -32,6 +32,16 @@ pipeline {
                 }
             }
         }
+        
+        stage('Clean Terraform Workspace') {
+            steps {
+                sh '''
+                    rm -rf .terraform
+                    rm -f .terraform.lock.hcl
+                    rm -f tfplan
+                '''
+            }
+        }
 
         stage('Terraform Init') {
             steps {
