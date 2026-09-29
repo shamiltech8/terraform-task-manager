@@ -39,6 +39,12 @@ pipeline {
             }
         }
 
+        stage('Terraform State Check') {
+            steps {
+                sh 'terraform state list'
+            }
+        }
+
         stage('Terraform Validate') {
             steps {
                 sh 'terraform validate'
