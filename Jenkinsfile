@@ -27,7 +27,7 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-credentials']
+                     credentialsId: 'aws-terraform-jenkins']
                 ]) {
                     sh '''
                         echo "===== AWS IDENTITY ====="
@@ -41,7 +41,7 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-credentials']
+                     credentialsId: 'aws-terraform-jenkins']
                 ]) {
                     sh '''
                         echo "===== TERRAFORM INIT ====="
@@ -59,7 +59,7 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-credentials']
+                     credentialsId: 'aws-terraform-jenkins']
                 ]) {
                     sh '''
                         echo "===== TERRAFORM VERSION ====="
@@ -114,7 +114,7 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-credentials']
+                     credentialsId: 'aws-terraform-jenkins']
                 ]) {
                     sh '''
                         echo "===== AWS IDENTITY ====="
@@ -147,7 +147,7 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-credentials']
+                     credentialsId: 'aws-terraform-jenkins']
                 ]) {
                     sh '''
                         echo "===== TERRAFORM PLAN ====="
