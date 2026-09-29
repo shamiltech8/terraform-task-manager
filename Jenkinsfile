@@ -35,13 +35,23 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                sh 'terraform init'
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'aws-terraform-jenkins']
+                ]) {
+                    sh 'terraform init -reconfigure'
+                }
             }
         }
 
         stage('Terraform State Check') {
             steps {
-                sh 'terraform state list'
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'aws-terraform-jenkins']
+                ]) {
+                    sh 'terraform state list'
+                }
             }
         }
 
