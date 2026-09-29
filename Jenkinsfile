@@ -13,6 +13,20 @@ pipeline {
 
     stages {
 
+        stage('Clean Workspace') {
+            steps {
+                sh '''
+                    echo "===== CLEANING TERRAFORM WORKSPACE ====="
+
+                    rm -rf .terraform
+                    rm -f .terraform.lock.hcl
+                    rm -f tfplan
+
+                    echo "Workspace cleaned."
+                '''
+            }
+        }
+
         stage('AWS Authentication Test') {
             steps {
                 withCredentials([
@@ -24,20 +38,6 @@ pipeline {
                         aws sts get-caller-identity
                     '''
                 }
-            }
-        }
-
-        stage('Clean Terraform Workspace') {
-            steps {
-                sh '''
-                    echo "===== CLEANING TERRAFORM WORKSPACE ====="
-
-                    rm -rf .terraform
-                    rm -f .terraform.lock.hcl
-                    rm -f tfplan
-
-                    echo "Terraform local metadata cleaned."
-                '''
             }
         }
 
@@ -63,19 +63,46 @@ pipeline {
                      credentialsId: 'aws-terraform-jenkins']
                 ]) {
                     sh '''
-                        echo "===== TERRAFORM BACKEND METADATA ====="
+                        echo "===== TERRAFORM DIRECTORY ====="
+                        ls -la .terraform || true
 
-                        cat .terraform/terraform.tfstate
+                        echo ""
+                        echo "===== TERRAFORM BACKEND FILES ====="
+                        find .terraform -maxdepth 3 -type f -print 2>/dev/null || true
 
                         echo ""
                         echo "===== TERRAFORM VERSION ====="
-
                         terraform version
 
                         echo ""
                         echo "===== TERRAFORM PROVIDERS ====="
-
                         terraform providers
+
+                        echo ""
+                        echo "===== DIRECT S3 STATE CHECK ====="
+
+                        aws s3 cp \
+                          s3://shamil-terraform-state-2026-148908330969/cloud-native-task-manager/terraform.tfstate \
+                          /tmp/jenkins-terraform.tfstate
+
+                        echo ""
+                        echo "===== RESOURCE IDS IN DIRECT S3 COPY ====="
+
+                        grep -E \
+                          'i-0b44a5d32e4241f7b|sg-0062934f4aad9e2e5|cloud-native-task-manager' \
+                          /tmp/jenkins-terraform.tfstate || true
+
+                        echo ""
+                        echo "===== TERRAFORM STATE PULL ====="
+
+                        terraform state pull > /tmp/terraform-state-pull.json
+
+                        echo ""
+                        echo "===== RESOURCE IDS FROM TERRAFORM STATE PULL ====="
+
+                        grep -E \
+                          'i-0b44a5d32e4241f7b|sg-0062934f4aad9e2e5|cloud-native-task-manager' \
+                          /tmp/terraform-state-pull.json || true
                     '''
                 }
             }
@@ -93,7 +120,7 @@ pipeline {
                         aws sts get-caller-identity
 
                         echo ""
-                        echo "===== S3 STATE OBJECT ====="
+                        echo "===== S3 OBJECT ====="
 
                         aws s3api head-object \
                           --bucket shamil-terraform-state-2026-148908330969 \
@@ -103,12 +130,6 @@ pipeline {
                         echo "===== TERRAFORM STATE LIST ====="
 
                         terraform state list
-
-                        echo ""
-                        echo "===== TERRAFORM STATE PULL ====="
-
-                        terraform state pull | grep -E \
-                          'i-0b44a5d32e4241f7b|sg-0062934f4aad9e2e5|cloud-native-task-manager' || true
                     '''
                 }
             }
@@ -142,8 +163,11 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'tfplan',
-                             allowEmptyArchive: true
+            archiveArtifacts(
+                artifacts: 'tfplan',
+                allowEmptyArchive: true
+            )
         }
     }
 }
+
