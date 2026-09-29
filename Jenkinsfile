@@ -1,14 +1,10 @@
 pipeline {
+
     agent any
 
     environment {
-        TF_VAR_ami_id               = 'ami-01a00762f46d584a1'
-        TF_VAR_instance_type        = 't3.micro'
-        TF_VAR_subnet_id            = 'subnet-0c23ae939428c16d7'
-        TF_VAR_security_group_id    = 'sg-0062934f4aad9e2e5'
-        TF_VAR_key_name             = 'task-manger-key'
-        TF_VAR_iam_instance_profile = 'CloudNativeTaskManagerEC2Role'
-        TF_VAR_ecr_repository_name  = 'cloud-native-task-manager'
+        AWS_DEFAULT_REGION = 'ap-south-1'
+        TF_IN_AUTOMATION = 'true'
     }
 
     stages {
@@ -31,11 +27,10 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-jenkins']
+                     credentialsId: 'aws-terraform-credentials']
                 ]) {
                     sh '''
                         echo "===== AWS IDENTITY ====="
-
                         aws sts get-caller-identity
                     '''
                 }
@@ -46,12 +41,15 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-jenkins']
+                     credentialsId: 'aws-terraform-credentials']
                 ]) {
                     sh '''
                         echo "===== TERRAFORM INIT ====="
 
-                        terraform init -reconfigure
+                        terraform init \
+                            -reconfigure \
+                            -migrate-state=false \
+                            -input=false
                     '''
                 }
             }
@@ -61,55 +59,43 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-jenkins']
+                     credentialsId: 'aws-terraform-credentials']
                 ]) {
                     sh '''
                         echo "===== TERRAFORM VERSION ====="
-
                         terraform version
 
                         echo ""
                         echo "===== TERRAFORM WORKSPACE ====="
-
                         terraform workspace show
 
                         echo ""
                         echo "===== TERRAFORM WORKSPACES ====="
-
                         terraform workspace list
 
                         echo ""
                         echo "===== TERRAFORM DIRECTORY ====="
-
                         ls -la .terraform
 
                         echo ""
                         echo "===== TERRAFORM BACKEND FILES ====="
-
-                        find .terraform -maxdepth 3 -type f -print 2>/dev/null || true
+                        find .terraform -maxdepth 3 -type f -print
 
                         echo ""
                         echo "===== TERRAFORM BACKEND CONFIGURATION ====="
-
-                        grep -R "shamil-terraform-state-2026-148908330969" \
-                            .terraform 2>/dev/null || true
+                        grep -R "shamil-terraform-state-2026-148908330969" .terraform || true
 
                         echo ""
                         echo "===== TERRAFORM STATE PULL SIZE ====="
-
                         terraform state pull > /tmp/terraform-state-pull.json
-
                         wc -c /tmp/terraform-state-pull.json
 
                         echo ""
                         echo "===== TERRAFORM STATE PULL RESOURCES ====="
-
-                        grep -E '"type":|"name":|"id":' \
-                            /tmp/terraform-state-pull.json | head -80
+                        grep -E '"type":|"name":|"id":' /tmp/terraform-state-pull.json | head -80
 
                         echo ""
                         echo "===== DIRECT S3 STATE SIZE ====="
-
                         aws s3 cp \
                             s3://shamil-terraform-state-2026-148908330969/cloud-native-task-manager/terraform.tfstate \
                             /tmp/direct-s3-state.json
@@ -118,9 +104,7 @@ pipeline {
 
                         echo ""
                         echo "===== DIRECT S3 STATE RESOURCES ====="
-
-                        grep -E '"type":|"name":|"id":' \
-                            /tmp/direct-s3-state.json | head -80
+                        grep -E '"type":|"name":|"id":' /tmp/direct-s3-state.json | head -80
                     '''
                 }
             }
@@ -130,23 +114,20 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-jenkins']
+                     credentialsId: 'aws-terraform-credentials']
                 ]) {
                     sh '''
                         echo "===== AWS IDENTITY ====="
-
                         aws sts get-caller-identity
 
                         echo ""
                         echo "===== S3 OBJECT ====="
-
                         aws s3api head-object \
                             --bucket shamil-terraform-state-2026-148908330969 \
                             --key cloud-native-task-manager/terraform.tfstate
 
                         echo ""
                         echo "===== TERRAFORM STATE LIST ====="
-
                         terraform state list
                     '''
                 }
@@ -157,7 +138,6 @@ pipeline {
             steps {
                 sh '''
                     echo "===== TERRAFORM VALIDATE ====="
-
                     terraform validate
                 '''
             }
@@ -167,12 +147,14 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-jenkins']
+                     credentialsId: 'aws-terraform-credentials']
                 ]) {
                     sh '''
                         echo "===== TERRAFORM PLAN ====="
 
-                        terraform plan -out=tfplan
+                        terraform plan \
+                            -input=false \
+                            -out=tfplan
                     '''
                 }
             }
@@ -181,10 +163,7 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts(
-                artifacts: 'tfplan',
-                allowEmptyArchive: true
-            )
+            archiveArtifacts artifacts: 'tfplan', allowEmptyArchive: true
         }
     }
 }
