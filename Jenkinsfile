@@ -19,7 +19,7 @@ pipeline {
                     rm -f terraform.tfstate
                     rm -f terraform.tfstate.backup
                     rm -f tfplan
-                    
+
                     echo "Workspace cleaned."
                 '''
             }
@@ -145,6 +145,26 @@ pipeline {
             }
         }
 
+        stage('Create Terraform Variables') {
+            steps {
+                sh '''
+                    echo "===== CREATING TERRAFORM VARIABLES ====="
+
+                    cat > terraform.tfvars <<'EOF'
+ami_id               = "ami-01a00762f46d584a1"
+instance_type        = "t3.micro"
+subnet_id            = "subnet-0c23ae939428c16d7"
+security_group_id    = "sg-0062934f4aad9e2e5"
+key_name             = "task-manger-key"
+iam_instance_profile = "CloudNativeTaskManagerEC2Role"
+ecr_repository_name  = "cloud-native-task-manager"
+EOF
+
+                    echo "Terraform variables created."
+                '''
+            }
+        }
+
         stage('Terraform Plan') {
             steps {
                 withCredentials([
@@ -169,4 +189,3 @@ pipeline {
         }
     }
 }
-
