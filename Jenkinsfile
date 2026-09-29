@@ -1,6 +1,16 @@
 pipeline {
     agent any
 
+    environment {
+        TF_VAR_ami_id               = 'ami-01a00762f46d584a1'
+        TF_VAR_instance_type        = 't3.micro'
+        TF_VAR_subnet_id            = 'subnet-0c23ae939428c16d7'
+        TF_VAR_security_group_id    = 'sg-0062934f4aad9e2e5'
+        TF_VAR_key_name             = 'task-manger-key'
+        TF_VAR_iam_instance_profile = 'CloudNativeTaskManagerEC2Role'
+        TF_VAR_ecr_repository_name  = 'cloud-native-task-manager'
+    }
+
     stages {
 
         stage('Checkout') {
