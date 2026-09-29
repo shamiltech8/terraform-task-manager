@@ -148,7 +148,7 @@ pipeline {
         stage('Create Terraform Variables') {
             steps {
                 sh '''
-                    echo "===== CREATING TERRAFORM VARIABLES ====="
+                    echo "===== CREATING TERRAFORM VARIABLES =====
 
                     cat > terraform.tfvars <<'EOF'
 ami_id               = "ami-01a00762f46d584a1"
@@ -181,6 +181,31 @@ EOF
                 }
             }
         }
+
+        stage('Terraform Approval') {
+            steps {
+                input message: 'Review Terraform plan and approve deployment?',
+                      ok: 'Approve and Apply'
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'aws-terraform-jenkins']
+                ]) {
+                    sh '''
+                        echo "===== TERRAFORM APPLY ====="
+
+                        terraform apply \
+                            -input=false \
+                            -auto-approve \
+                            tfplan
+                    '''
+                }
+            }
+        }
     }
 
     post {
@@ -189,3 +214,4 @@ EOF
         }
     }
 }
+
