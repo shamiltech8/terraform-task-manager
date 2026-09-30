@@ -40,3 +40,8 @@ variable "ecr_repository_name" {
   type        = string
   default     = "cloud-native-task-manager"
 }
+
+variable "allowed_app_ips" {
+  description = "IP addresses allowed to access the Task Manager application"
+  type        = list(string)
+}
