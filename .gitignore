@@ -4,3 +4,8 @@
 *.tfvars
 *.tfplan
 tfplan
+
+# Local values
+backend.hcl
+*.tfvars
+!*.tfvars.example

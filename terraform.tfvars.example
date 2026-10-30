@@ -1,0 +1,8 @@
+ami_id               = ""
+instance_type        = ""
+subnet_id            = ""
+security_group_id    = ""
+key_name             = ""
+iam_instance_profile = ""
+ecr_repository_name  = ""
+allowed_app_ips      = ["203.0.113.10/32"]   # replace with your own IP range(s)

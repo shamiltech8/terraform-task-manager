@@ -42,13 +42,15 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform-jenkins']
+                     credentialsId: 'aws-terraform-jenkins'],
+                    file(credentialsId: 'terraform-backend-hcl', variable: 'BACKEND_HCL')
                 ]) {
                     sh '''
                         echo "===== TERRAFORM INIT ====="
 
                         terraform init \
                             -reconfigure \
+                            -backend-config="$BACKEND_HCL" \
                             -migrate-state=false \
                             -input=false
                     '''

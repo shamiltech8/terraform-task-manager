@@ -294,3 +294,10 @@ Terraform manages infrastructure while Docker and Kubernetes manage application 
 ## Project Goal
 
 The goal of this project is to demonstrate practical Infrastructure as Code and DevOps practices by managing AWS infrastructure with Terraform and integrating Terraform into a Jenkins-based CI/CD workflow.
+
+## Backend setup
+
+    cp backend.hcl.example backend.hcl           # set your S3 bucket and state key
+    cp terraform.tfvars.example terraform.tfvars  # fill in your values
+    terraform init -backend-config=backend.hcl
+    terraform plan
